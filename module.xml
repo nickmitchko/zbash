@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Export generator="Cache" version="25">
+  <Document name="zpip.ZPM">
+    <Module>
+      <Name>zbash</Name>
+      <GlobalScope>true</GlobalScope>
+      <Version>0.0.1</Version>
+      <Description>Use bash from the intersystems terminal</Description>
+      <Keywords>bash terminal</Keywords>
+      <Packaging>module</Packaging>
+      <Dependencies>
+        <ModuleReference>
+          <Name>zpipe</Name>
+          <Version>1.*</Version>
+        </ModuleReference>
+      </Dependencies>
+      <Resource Name="%ZBASH.PKG"/>
+      <SourcesRoot>src</SourcesRoot>
+      <SystemRequirements Version=">=2022.1" />
+      <Invoke Class="%ZBASH.zbash" Method="UpdateLanguageExtensions" Phase="Compile" When="After" CheckStatus="false">
+      </Invoke>
+      <Invoke Class="%ZBASH.zbash" Method="PrintMessage" Phase="Activate" When="After" CheckStatus="false">
+      </Invoke>
+      <AfterInstallMessage>Module installed successfully! To use zbash see above message %SYS> zbash "command"</AfterInstallMessage>
+    </Module>
+  </Document>
+</Export>
