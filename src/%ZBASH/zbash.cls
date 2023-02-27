@@ -6,11 +6,78 @@ Class %ZBASH.zbash
 
 ClassMethod Shell(pArgs)
 {
-    Do cmd^Zpipe("/bin/bash -c """ _ pArgs _ " "" 2>&1")
+    Set cmd = ""
+    If $$$isMACOSX {
+      Set cmd = "/bin/zsh -c "_ " """ _ pArgs _ """ 2>&1"
+    }
+    If $$$isUNIX {
+      Set cmd = "/bin/bash -c"_ " """ _ pArgs _ """ 2>&1"
+    }
+    If $$$isWINDOWS {
+      // IF WSL
+      Set findWSL = ..CPIPESilent("cmd.exe /c WHERE wsl")
+      Set isWSL = $MATCH(findWSL, ".*wsl.exe")
+      IF isWSL {
+        Set cmd = "wsl -- /bin/bash -c"_ " """ _ pArgs _ """ 2>&1"
+        // ELSE use powershell
+      } ELSE {
+        Set cmd = "powershell /c "_ " """ _ pArgs _ """ 2>&1"
+      }
+    }
+    IF $$$isVMS {
+      Write "VMS is untested, quitting command output"
+      QUIT
+    }
+    Set cmd = cmd _ " """ _ pArgs _ " "" 2>&1"
+    #; WRITE cmd, !
+    Do cmd^Zpipe(cmd)
 }
 
-ClassMethod InvokeSafe(){
-    // TODO Implement so that we don't allow command injection in ZPIP
+ClassMethod CPIPESilent(command) As %String
+{
+
+    Set sc = $$$OK
+
+    Set oldIO = $IO
+
+    Set pResponse = ""
+
+    Set dev="|CPIPE|1"
+
+    Set $ZTRAP="cls"
+
+    Set empty=0
+
+    Set ncmd = command
+
+    Open dev:ncmd:0
+
+    write:0 $test,!
+
+    Else  w "pipe failed" Quit 0
+
+    While empty<3 {
+
+        Use dev Read line 
+
+        Set empty=$SELECT($LENGTH(line):0,1:$INCREMENT(empty))
+
+        Set pResponse = pResponse _ line  ;;; or do any kind of analysis of the line 
+
+        }
+
+    Use oldIO
+    #; $$$LOGINFO($ZUTIL(214))
+
+cls ;
+
+    Set $ZTRAP="" Use oldIO
+
+    Close dev 
+
+    If $ZERROR'["<ENDOFFILE>" Write $ZERROR,!
+
+    Quit pResponse
 }
 
 ClassMethod UpdateLanguageExtensionsOne(RoutineName As %String, pTestOnly As %Boolean = 0, Output pFound As %Boolean = 0, ByRef tGenLines) As %Status
@@ -123,52 +190,53 @@ ZBASH(pArgs) Do ##class(%ZBASH.zbash).Shell(pArgs) Quit
 $$$ENDTAG
 #; Need an extra line down here to avoid the end bracket being on the same line as $$$ENDTAG - a comment is just fine.
 }
+
 ClassMethod PrintMessage()
 {
-  w !
-  w !, "          _____                    _____                    _____                    _____                    _____          "
-  w !, "         /\    \                  /\    \                  /\    \                  /\    \                  /\    \         "
-  w !, "        /::\    \                /::\    \                /::\    \                /::\    \                /::\____\        "
-  w !, "        \:::\    \              /::::\    \              /::::\    \              /::::\    \              /:::/    /        "
-  w !, "         \:::\    \            /::::::\    \            /::::::\    \            /::::::\    \            /:::/    /         "
-  w !, "          \:::\    \          /:::/\:::\    \          /:::/\:::\    \          /:::/\:::\    \          /:::/    /          "
-  w !, "           \:::\    \        /:::/__\:::\    \        /:::/__\:::\    \        /:::/__\:::\    \        /:::/____/           "
-  w !, "            \:::\    \      /::::\   \:::\    \      /::::\   \:::\    \       \:::\   \:::\    \      /::::\    \           "
-  w !, "             \:::\    \    /::::::\   \:::\    \    /::::::\   \:::\    \    ___\:::\   \:::\    \    /::::::\    \   _____  "
-  w !, "              \:::\    \  /:::/\:::\   \:::\ ___\  /:::/\:::\   \:::\    \  /\   \:::\   \:::\    \  /:::/\:::\    \ /\    \ "
-  w !, "_______________\:::\____\/:::/__\:::\   \:::|    |/:::/  \:::\   \:::\____\/::\   \:::\   \:::\____\/:::/  \:::\    /::\____\"
-  w !, "\::::::::::::::::::/    /\:::\   \:::\  /:::|____|\::/    \:::\  /:::/    /\:::\   \:::\   \::/    /\::/    \:::\  /:::/    /"
-  w !, " \::::::::::::::::/____/  \:::\   \:::\/:::/    /  \/____/ \:::\/:::/    /  \:::\   \:::\   \/____/  \/____/ \:::\/:::/    / "
-  w !, "  \:::\~~~~\~~~~~~         \:::\   \::::::/    /            \::::::/    /    \:::\   \:::\    \               \::::::/    /  "
-  w !, "   \:::\    \               \:::\   \::::/    /              \::::/    /      \:::\   \:::\____\               \::::/    /   "
-  w !, "    \:::\    \               \:::\  /:::/    /               /:::/    /        \:::\  /:::/    /               /:::/    /    "
-  w !, "     \:::\    \               \:::\/:::/    /               /:::/    /          \:::\/:::/    /               /:::/    /     "
-  w !, "      \:::\    \               \::::::/    /               /:::/    /            \::::::/    /               /:::/    /      "
-  w !, "       \:::\____\               \::::/    /               /:::/    /              \::::/    /               /:::/    /       "
-  w !, "        \::/    /                \::/____/                \::/    /                \::/    /                \::/    /        "
-  w !, "         \/____/                  ~~                       \/____/                  \/____/                  \/____/         "
-  w !, "                                                                                                                             "
-  w !, ""
-  w !, "Welcome to the zbash help page!"
-  w !, ""
-  w !, "zbash is a command shortcut that allows you to execute a command in a Bash shell without having to manually enter the shell. This can be useful if you need to quickly execute a command or if you prefer to work in a Bash environment."
-  w !, ""
-  w !, "Usage:"
-  w !, "zbash ""[command]"""
-  w !, ""
-  w !, "Examples:"
-  w !, ""
-  w !, "    zbash ""ls"" : Execute the ls command in a Bash shell"
-  w !, "    zbash ""python script.py"" : Execute a Python script in a Bash shell"
-  w !, "    zbash ""cd /path/to/directory && python script.py"" : Change the current working directory in a Bash shell"
-  w !, ""
-  w !, "Notes:"
-  w !, ""
-  w !, "    The zbash command will automatically start a new Bash shell for each invocation."
-  w !, "    zbash does not support user input. There is no need to exit the command."
-  w !, ""
-  w !, "I hope this information helps you use zbash effectively. If you have any further questions or concerns, please consult the Bash documentation."
-  W !,!
+  Write !
+  Write !, "          _____                    _____                    _____                    _____                    _____          "
+  Write !, "         /\    \                  /\    \                  /\    \                  /\    \                  /\    \         "
+  Write !, "        /::\    \                /::\    \                /::\    \                /::\    \                /::\____\        "
+  Write !, "        \:::\    \              /::::\    \              /::::\    \              /::::\    \              /:::/    /        "
+  Write !, "         \:::\    \            /::::::\    \            /::::::\    \            /::::::\    \            /:::/    /         "
+  Write !, "          \:::\    \          /:::/\:::\    \          /:::/\:::\    \          /:::/\:::\    \          /:::/    /          "
+  Write !, "           \:::\    \        /:::/__\:::\    \        /:::/__\:::\    \        /:::/__\:::\    \        /:::/____/           "
+  Write !, "            \:::\    \      /::::\   \:::\    \      /::::\   \:::\    \       \:::\   \:::\    \      /::::\    \           "
+  Write !, "             \:::\    \    /::::::\   \:::\    \    /::::::\   \:::\    \    ___\:::\   \:::\    \    /::::::\    \   _____  "
+  Write !, "              \:::\    \  /:::/\:::\   \:::\ ___\  /:::/\:::\   \:::\    \  /\   \:::\   \:::\    \  /:::/\:::\    \ /\    \ "
+  Write !, "_______________\:::\____\/:::/__\:::\   \:::|    |/:::/  \:::\   \:::\____\/::\   \:::\   \:::\____\/:::/  \:::\    /::\____\"
+  Write !, "\::::::::::::::::::/    /\:::\   \:::\  /:::|____|\::/    \:::\  /:::/    /\:::\   \:::\   \::/    /\::/    \:::\  /:::/    /"
+  Write !, " \::::::::::::::::/____/  \:::\   \:::\/:::/    /  \/____/ \:::\/:::/    /  \:::\   \:::\   \/____/  \/____/ \:::\/:::/    / "
+  Write !, "  \:::\~~~~\~~~~~~         \:::\   \::::::/    /            \::::::/    /    \:::\   \:::\    \               \::::::/    /  "
+  Write !, "   \:::\    \               \:::\   \::::/    /              \::::/    /      \:::\   \:::\____\               \::::/    /   "
+  Write !, "    \:::\    \               \:::\  /:::/    /               /:::/    /        \:::\  /:::/    /               /:::/    /    "
+  Write !, "     \:::\    \               \:::\/:::/    /               /:::/    /          \:::\/:::/    /               /:::/    /     "
+  Write !, "      \:::\    \               \::::::/    /               /:::/    /            \::::::/    /               /:::/    /      "
+  Write !, "       \:::\____\               \::::/    /               /:::/    /              \::::/    /               /:::/    /       "
+  Write !, "        \::/    /                \::/____/                \::/    /                \::/    /                \::/    /        "
+  Write !, "         \/____/                  ~~                       \/____/                  \/____/                  \/____/         "
+  Write !, "                                                                                                                             "
+  Write !, ""
+  Write !, "Welcome to the zbash help page!"
+  Write !, ""
+  Write !, "zbash is a command shortcut that allows you to execute a command in a Bash shell without having to manually enter the shell. This can be useful if you need to quickly execute a command or if you prefer to work in a Bash environment."
+  Write !, ""
+  Write !, "Usage:"
+  Write !, "zbash ""[command]"""
+  Write !, ""
+  Write !, "Examples:"
+  Write !, ""
+  Write !, "    zbash ""ls"" : Execute the ls command in a Bash shell"
+  Write !, "    zbash ""python script.py"" : Execute a Python script in a Bash shell"
+  Write !, "    zbash ""cd /path/to/directory && python script.py"" : Change the current working directory in a Bash shell"
+  Write !, ""
+  Write !, "Notes:"
+  Write !, ""
+  Write !, "    The zbash command will automatically start a new Bash shell for each invocation."
+  Write !, "    zbash does not support user input. There is no need to exit the command."
+  Write !, ""
+  Write !, "I hope this information helps you use zbash effectively. If you have any further questions or concerns, please consult the Bash documentation."
+  Write !,!
 }
 
 }
