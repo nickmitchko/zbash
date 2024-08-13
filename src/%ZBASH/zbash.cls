@@ -1,5 +1,3 @@
-Include %ZPM.PackageManager.Common
-
 /// Used for version check
 Class %ZBASH.zbash
 {
